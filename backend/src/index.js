@@ -2,10 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const routes = require('./routes');
 
+const configuration = require('../config_env')
 
 const app = express();
 
-mongoose.connect('mongodb+srv://guilherme_admin:@clustergl-crsg7.azure.mongodb.net/test?retryWrites=true&w=majority',{
+mongoose.connect('mongodb+srv://'+ configuration.database_info.user+':'+configuration.database_info.password+'@clustergl-crsg7.azure.mongodb.net/test?retryWrites=true&w=majority',{
     useNewUrlParser:true,
     useUnifiedTopology:true,
 })
