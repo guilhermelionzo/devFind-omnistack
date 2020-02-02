@@ -16,11 +16,13 @@ module.exports = {
         const {github_username, techs, latitude, longitude} = request.body;
         
         let dev = await Dev.findOne({github_username});
+        
+        console.log("before loop >"+dev)
 
         if(!dev){
 
             const apiResponse = await axios.get(`https://api.github.com/users/${github_username}`)
-        
+
             const {name=login,avatar_url,bio} = apiResponse.data;
     
             const techsArray = parseStringAsArray(techs);
@@ -30,7 +32,7 @@ module.exports = {
                 coordinates:[longitude,latitude],
             }; 
     
-            const dev = await Dev.create({
+            dev = await Dev.create({
                 github_username,
                 name,
                 avatar_url,
