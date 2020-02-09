@@ -4,42 +4,61 @@ import MapView, { Marker, Callout } from 'react-native-maps';
 import { requestPermissionsAsync, getCurrentPositionAsync } from 'expo-location'
 import { MaterialIcons } from '@expo/vector-icons'
 
-import api from '../services/api'
+import api from '../services/api';
+import { connect, disconnect, subscribeToNewDevs} from '../services/socket'
 
 function Main({ navigation }) {
 
     const [devs, setDevs] = useState([]);
     const [currentRegion, setCurrentRegion] = useState(null);
-    const [techs,setTechs] = useState(null);
+    const [techs, setTechs] = useState(null);
 
 
     useEffect(() => {
         async function loadInitialPosition() {
-          const { granted } = await requestPermissionsAsync();
-    
-          if (granted) {
-            const { coords } = await getCurrentPositionAsync({
-              enableHighAccuracy: true,
-            });
-    
-            const { latitude, longitude } = coords;
-    
-            setCurrentRegion({
-              latitude,
-              longitude,
-              latitudeDelta: 0.04,
-              longitudeDelta: 0.04,
-            })
-          }
+            const { granted } = await requestPermissionsAsync();
+
+            if (granted) {
+                const { coords } = await getCurrentPositionAsync({
+                    enableHighAccuracy: true,
+                });
+
+                const { latitude, longitude } = coords;
+
+                setCurrentRegion({
+                    latitude,
+                    longitude,
+                    latitudeDelta: 0.04,
+                    longitudeDelta: 0.04,
+                })
+            }
         }
-    
+
         loadInitialPosition();
-      }, []);
+    }, []);
+
+    useEffect(()=>{
+        subscribeToNewDevs(dev=>setDevs([...devs,dev]));
+    },[devs]);
+
+    function setupWebsocket() {
+
+        disconnect();   
+
+        const { latitude, longitude } = currentRegion;
+
+        connect(
+            latitude,
+            longitude,
+            techs,
+        );
+
+    }
 
     async function loadDevs() {
- 
+
         const { latitude, longitude } = currentRegion;
-        
+
         const response = await api.get('/search', {
             params: {
                 latitude,
@@ -47,12 +66,14 @@ function Main({ navigation }) {
                 techs
             }
         })
-        
+
         setDevs(response.data.devs);
+        setupWebsocket();
+        console.log('> loaded devs ok!')
     }
 
     function handleRegionChanged(region) {
-        
+
         setCurrentRegion(region);
     }
 
@@ -82,7 +103,7 @@ function Main({ navigation }) {
                             //navigation
                             navigation.navigate('Profile', { github_username: dev.github_username })
                         }}>
-                            <View styl={styles.callout}>
+                            <View style={styles.callout}>
                                 <Text style={styles.devName}>{dev.name}</Text>
                                 <Text style={styles.devBio}>{dev.bio}</Text>
                                 <Text style={styles.devTechs}>{dev.techs.join(', ')}</Text>
@@ -99,7 +120,7 @@ function Main({ navigation }) {
                     placeholderTextColor="#999"
                     autoCapitalize="words"
                     autoCorrect={false}
-                    value={techs} 
+                    value={techs}
                     onChangeText={setTechs}
                 />
                 <TouchableOpacity onPress={loadDevs} style={styles.loadButton}>
@@ -115,14 +136,14 @@ const styles = StyleSheet.create({
         flex: 1
     },
     avatar: {
-        width: 54,
-        height: 54,
+        width: 30,
+        height: 30,
         borderRadius: 4,
         borderWidth: 4,
         borderColor: '#FFF'
     },
     callout: {
-        width: 256,
+        width: 200,
     },
     devName: {
         fontWeight: 'bold',
@@ -130,7 +151,7 @@ const styles = StyleSheet.create({
     },
     devBio: {
         color: '#666',
-        marginTop: 5
+        marginTop: 5,
     },
     devTechs: {
         marginTop: 5,
@@ -166,7 +187,7 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
-        marginLeft:15,
+        marginLeft: 15,
     }
 });
 
